@@ -4,7 +4,14 @@ This repository presents an end-to-end ELT (Extract, Load, Transform) project im
 
 ## 1. Introduction and Data Source 
 
-The project analyses the financial reports of US banking institutions. The main objectives were to determine: 
+The project analyses the financial reports of US banking institutions. 
+
+This dataset was selected to analyze the stability of the US financial system using real-world regulatory data with deep historical context.
+
+The primary business process supported by this data is **financial health monitoring and regulatory reporting** (FDIC assessments).
+
+
+The main objectives were to determine: 
 
 * The ratio between bank assets and deposits. 
 
@@ -22,6 +29,7 @@ Below is the final analytical dashboard containing all key metrics.
 ![Final Dashboard](img/dashboard.jpg)
 
 Source Data: The dataset comes from the Snowflake Marketplace "Banking Analytics Bundle". Originally, the data was unstructured and denormalized like a single flat table, with columns such as:  
+* **`FDIC_INSTITUTIONS`**: This is the master register of all FDIC-insured institutions. It contains identifying information, geographic location, and key financial indicators.
 
 *  `MSA` (Bank Name)  
 * `STALP` (State)  
@@ -46,11 +54,22 @@ The source data existed in a ‘flat’ format typical for raw extracts, which r
 ## 2. Dimensional Model
 
 To support efficient analytics, a Star Schema was designed. The model consists of one Fact table and three Dimension tables:
+* **`FACT_BANK_PERFORMANCE`**: The central fact table aggregating financial metrics.
+    * **Primary Key:** `fact_id`
+    * **Foreign Keys:** `bank_id_fk` (links to Bank Details), `geo_id_fk` (links to Geography), `established_date_id_fk` (links to Date).
+    * **Metrics:** `total_assets`, `total_deposits`, `rank_in_state` (derived via window function), `avg_state_assets` (derived via window function).
 
-* `FACT_BANK_PERFORMANCE`: The central table containing metrics (Assets, Deposits) and foreign keys. It also includes calculated window functions like `Rank_In_State`.
-* `DIM_BANK_DETAILS`: Descriptive attributes of the bank (Name, Website). **(SCD Type 1 - updates overwrite previous values)**
-* `DIM_GEO`: Geographic hierarchy (State code, City name). **(SCD Type 0 - static geographic data)**
-* `DIM_DATE`: Calendar attributes taken from the establishment date. **(SCD Type 0 - fixed calendar data)**
+* **`DIM_BANK_DETAILS`**: Contains descriptive attributes of the bank.
+    * *Attributes:* Name, Website.
+    * *SCD Type:* **Type 1** (updates overwrite previous values).
+
+* **`DIM_GEO`**: Geographic hierarchy.
+    * *Attributes:* State code, City name.
+    * *SCD Type:* **Type 0** (static geographic data).
+
+* **`DIM_DATE`**: Calendar attributes derived from the establishment date.
+    * *Attributes:* Year, Quarter, Month, Full Date.
+    * *SCD Type:* **Type 0** (fixed calendar data).
 
 ![Star Schema](img/star_schema.jpg)
 
