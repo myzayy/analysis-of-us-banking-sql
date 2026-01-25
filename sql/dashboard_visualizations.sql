@@ -39,3 +39,24 @@ FROM fact_bank_perfomance f
 JOIN dim_geo g ON f.geo_id_fk = g.geo_id
 order by Average_bank_size DESC
 LIMIT 10;
+
+-- financial volume
+SELECT 
+    d.year,
+    SUM(f.total_assets) as total_assets_money,
+    
+FROM FACT_BANK_PERFOMANCE f
+JOIN DIM_DATE d ON f.established_date_id_fk = d.DATE_ID -- join by est date
+WHERE d.year >= 2000 -- last 20 years
+GROUP BY d.year
+ORDER BY d.year;
+
+-- bank creating activity
+SELECT 
+    d.year, 
+    COUNT(f.fact_id) as banks_count,
+FROM FACT_BANK_PERFOMANCE f
+JOIN DIM_DATE d ON f.established_date_id_fk = d.DATE_ID -- join by est date
+WHERE d.year >= 2000 -- last 20 years
+GROUP BY d.year
+ORDER BY d.year;
