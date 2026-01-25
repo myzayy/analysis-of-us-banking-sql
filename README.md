@@ -67,8 +67,8 @@ To support efficient analytics, a Star Schema was designed. The model consists o
     * *Attributes:* State code, City name.
     * *SCD Type:* **Type 0** (static geographic data).
 
-* **`DIM_DATE`**: Calendar attributes derived from the establishment date.
-    * *Attributes:* Year, Quarter, Month, Full Date.
+* **`DIM_DATE`**: Calendar attributes generated in snowflake from 1900 to 2050 year.
+    * *Attributes:* Year, Quarter, Month, Full Date, Day of Week, Day Name, Month Name.
     * *SCD Type:* **Type 0** (fixed calendar data).
 
 ![Star Schema](img/star_schema.jpg)
@@ -155,24 +155,38 @@ SELECT
     website
 FROM STAGING.STG_FDIC_INSTITUTIONS;
 
---Date
 CREATE OR REPLACE TABLE DIM_DATE (
     date_id INT IDENTITY(1,1) PRIMARY KEY,
     full_date DATE,
     year INT,
     month INT,
-    quarter INT
+    quarter INT,
+    day_of_week INT,
+    day_name string,
+    month_name string
 );
 
-INSERT INTO DIM_DATE (full_date, year, month, quarter)
+-- Date
+INSERT INTO DIM_DATE (full_date, year, month, quarter, day_of_week, day_name, month_name)
+-- Temp table DATE_RANGE:
+WITH DATE_RANGE AS (
+    SELECT
+        ROW_NUMBER() OVER (ORDER BY SEQ4()) - 1 AS row_num     -- insert number in each row
+    FROM TABLE(GENERATOR(ROWCOUNT => 55000))    -- 365 * 150 = 55000
+)
 SELECT
-    est_date,
-    YEAR(est_date),
-    MONTH(est_date),
-    QUARTER(est_date)
-FROM STAGING.STG_FDIC_INSTITUTIONS WHERE est_date IS NOT NULL
-GROUP BY EST_DATE
-ORDER BY EST_DATE;
+    DATEADD(DAY, row_num, '1900-01-01') as my_date,
+    YEAR(my_date),
+    MONTH(my_date),
+    QUARTER(my_date),
+    DAYOFWEEK(my_date),
+    --day_name:
+    DECODE(DAYOFWEEK(my_date), 0, 'Sunday', 1, 'Monday', 2, 'Tuesday', 3, 'Wednesdady', 4, 'Thursday', 5, 'Friday', 6, 'Saturday'),
+    MONTHNAME(my_date)
+FROM DATE_RANGE
+WHERE my_date <= '2050-12-31';
+
+select * from DIM_DATE limit 5;
 
 -- fact
 
@@ -297,7 +311,38 @@ LIMIT 10;
 
 *Figure 7: 10 States by average bank size*
 
+### Chart 6: Financial Volume
+This chart shows the change in financial volume for the period from 2000 to 2025.
+```
+SELECT 
+    d.year,
+    SUM(f.total_assets) as total_assets_money,
+    
+FROM FACT_BANK_PERFOMANCE f
+JOIN DIM_DATE d ON f.established_date_id_fk = d.DATE_ID -- join by est date
+WHERE d.year >= 2000 -- last 20 years
+GROUP BY d.year
+ORDER BY d.year;
+```
+![Chart 6](img/financial_volume.jpg)
 
+*Figure 8: Financial Volume*
+
+### Chart 7: Bank Creating Activity
+This chart visualizes the intensity of new players (banks) entering the market.
+```
+SELECT 
+    d.year, 
+    COUNT(f.fact_id) as banks_count,
+FROM FACT_BANK_PERFOMANCE f
+JOIN DIM_DATE d ON f.established_date_id_fk = d.DATE_ID -- join by est date
+WHERE d.year >= 2000 -- last 20 years
+GROUP BY d.year
+ORDER BY d.year;
+```
+![Chart 7](img/bank_creating_activity.jpg)
+
+*Figure 9: Bank Ceating Activity*
 
 Author:
 
