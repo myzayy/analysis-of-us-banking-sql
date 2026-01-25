@@ -38,7 +38,9 @@ CREATE OR REPLACE TABLE stg_fdic_institutions (
     website     STRING
 );
 
-INSERT INTO stg_fdic_institutions (bank_name, city, state, asset_amt, deposit_amt, est_date, website)
+INSERT INTO stg_fdic_institutions (bank_name,
+city, state, asset_amt, deposit_amt,
+est_date, website)
 SELECT 
     MSA,        -- bank name
     CONSERVE,   -- city
@@ -51,8 +53,8 @@ FROM BANKING_RAW.INSIGHTS.FDIC_INSTITUTIONS
 WHERE MSA IS NOT NULL 
   AND TRY_TO_NUMBER(ADDRESS) > 0;
 
-SELECT * FROM stg_fdic_institutions;
-SELECT count(*) FROM stg_fdic_institutions;
+-- SELECT * FROM stg_fdic_institutions;
+-- SELECT count(*) FROM stg_fdic_institutions;
 
 -- star schema Transform n load
 -- DIMENSION
@@ -96,20 +98,32 @@ CREATE OR REPLACE TABLE DIM_DATE (
     full_date DATE,
     year INT,
     month INT,
-    quarter INT
+    quarter INT,
+    day_of_week INT,
+    day_name string,
+    month_name string
 );
 
-INSERT INTO DIM_DATE (full_date, year, month, quarter)
+INSERT INTO DIM_DATE (full_date, year, month, quarter, day_of_week, day_name, month_name)
+-- Temp table DATE_RANGE:
+WITH DATE_RANGE AS (
+    SELECT
+        ROW_NUMBER() OVER (ORDER BY SEQ4()) - 1 AS row_num     -- insert number in each row
+    FROM TABLE(GENERATOR(ROWCOUNT => 55000))    -- 365 * 150 = 55000
+)
 SELECT
-    est_date,
-    YEAR(est_date),
-    MONTH(est_date),
-    QUARTER(est_date)
-FROM STAGING.STG_FDIC_INSTITUTIONS WHERE est_date IS NOT NULL
-GROUP BY EST_DATE
-ORDER BY EST_DATE;
+    DATEADD(DAY, row_num, '1900-01-01') as my_date,
+    YEAR(my_date),
+    MONTH(my_date),
+    QUARTER(my_date),
+    DAYOFWEEK(my_date),
+    --day_name:
+    DECODE(DAYOFWEEK(my_date), 0, 'Sunday', 1, 'Monday', 2, 'Tuesday', 3, 'Wednesdady', 4, 'Thursday', 5, 'Friday', 6, 'Saturday'),
+    MONTHNAME(my_date)
+FROM DATE_RANGE
+WHERE my_date <= '2050-12-31';
 
-SELECT * FROM DIM_DATE LIMIT 5;
+select * from DIM_DATE limit 5;
 
 -- facts
 
