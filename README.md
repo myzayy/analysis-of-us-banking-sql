@@ -324,7 +324,7 @@ WHERE d.year >= 2000 -- last 20 years
 GROUP BY d.year
 ORDER BY d.year;
 ```
-![Chart 6](img/financial_volume.jpg)
+![Chart 6](img/financial_volume.png)
 
 *Figure 8: Financial Volume*
 
@@ -340,7 +340,7 @@ WHERE d.year >= 2000 -- last 20 years
 GROUP BY d.year
 ORDER BY d.year;
 ```
-![Chart 7](img/bank_creating_activity.jpg)
+![Chart 7](img/bank_creating_activity.png)
 
 *Figure 9: Bank Ceating Activity*
 
