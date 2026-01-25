@@ -313,7 +313,7 @@ LIMIT 10;
 
 ### Chart 6: Financial Volume
 This chart shows the change in financial volume for the period from 2000 to 2025.
-```
+```sql
 SELECT 
     d.year,
     SUM(f.total_assets) as total_assets_money,
@@ -330,7 +330,7 @@ ORDER BY d.year;
 
 ### Chart 7: Bank Creating Activity
 This chart visualizes the intensity of new players (banks) entering the market.
-```
+```sql
 SELECT 
     d.year, 
     COUNT(f.fact_id) as banks_count,
